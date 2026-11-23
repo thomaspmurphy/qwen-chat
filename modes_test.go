@@ -49,11 +49,11 @@ func TestResolve(t *testing.T) {
 		want  settings
 	}{
 		{"default", modeDefault, false, none, settings{modeDefault, "qwen3.5:4b", false, 8192}},
-		{"deep", modeDeep, false, none, settings{modeDeep, "qwen3.6:35b-a3b", false, 16384}},
+		{"deep thinks by default", modeDeep, false, none, settings{modeDeep, "qwen3.5:9b", true, 16384}},
 		{"default think", modeDefault, true, none, settings{modeDefault, "qwen3.5:4b", true, 8192}},
-		{"deep think", modeDeep, true, none, settings{modeDeep, "qwen3.6:35b-a3b", true, 16384}},
+		{"deep think", modeDeep, true, none, settings{modeDeep, "qwen3.5:9b", true, 16384}},
 		{"default env", modeDefault, false, envOf(map[string]string{"QWEN_MODEL": "a:1b"}), settings{modeDefault, "a:1b", false, 8192}},
-		{"deep env", modeDeep, false, envOf(map[string]string{"QWEN_DEEP_MODEL": "d:1b", "QWEN_MODEL": "a:1b"}), settings{modeDeep, "d:1b", false, 16384}},
+		{"deep env", modeDeep, false, envOf(map[string]string{"QWEN_DEEP_MODEL": "d:1b", "QWEN_MODEL": "a:1b"}), settings{modeDeep, "d:1b", true, 16384}},
 	} {
 		if got := resolve(tc.mode, tc.think, tc.env); got != tc.want {
 			t.Errorf("%s: got %+v, want %+v", tc.name, got, tc.want)
@@ -67,13 +67,13 @@ func TestModelFlagOnlyForStartingMode(t *testing.T) {
 	if start.model != "x" || start.mode != modeDefault {
 		t.Errorf("start: %+v, want model x in default mode", start)
 	}
-	if deep := resolve(modeDeep, false, env); deep.model != "qwen3.6:35b-a3b" {
-		t.Errorf("after /deep: model %s, want qwen3.6:35b-a3b", deep.model)
+	if deep := resolve(modeDeep, false, env); deep.model != "qwen3.5:9b" {
+		t.Errorf("after /deep: model %s, want qwen3.5:9b", deep.model)
 	}
 	if back := resolve(modeDefault, false, env); back.model != "a:1b" {
 		t.Errorf("after /default: model %s, want a:1b", back.model)
 	}
-	if s := startSettings(modeDeep, "", true, env); s.model != "qwen3.6:35b-a3b" || !s.think {
+	if s := startSettings(modeDeep, "", true, env); s.model != "qwen3.5:9b" || !s.think {
 		t.Errorf("deep start without --model: %+v", s)
 	}
 }

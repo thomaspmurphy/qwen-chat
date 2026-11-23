@@ -61,14 +61,16 @@ When stdout is not a terminal, the answer is printed as plain Markdown.
 
 ## Modes
 
-| Mode | Flag | Chat command | Default model | Download | Context |
-| --- | --- | --- | --- | --- | --- |
-| default | | `/default` | `qwen3.5:4b` | about 4 GB | 8192 |
-| deep | `-d`, `--deep` | `/deep` | `qwen3.6:35b-a3b` | about 20 GB | 16384 |
+| Mode | Flag | Chat command | Default model | Download | Thinking | Context |
+| --- | --- | --- | --- | --- | --- | --- |
+| default | | `/default` | `qwen3.5:4b` | about 4 GB | off | 8192 |
+| deep | `-d`, `--deep` | `/deep` | `qwen3.5:9b` | about 8 GB | on | 16384 |
 
-Thinking is off by default in both modes; `-t` or `--think` turns it on for whichever mode is active. On a small model it costs tens of seconds per reply and rarely changes the answer.
+Default mode answers in a second or two. Deep mode is for questions where you'd rather wait and be right: on a 24 GB M5 Pro, a tricky bug question took the 4b without thinking 1 s and the 9b with thinking 45 s to 2 minutes across runs, and only the thinking answer was fully right. Without thinking the 9b was no better than the 4b, so deep thinks. `-t` or `--think` turns thinking on in default mode too.
 
-Only the default model needs pulling to get started. Deep is opt-in: run `ollama pull qwen3.6:35b-a3b` if you want it. Nothing is downloaded automatically; a missing model prints the `ollama pull` command to run.
+On a Mac with 32 GB or more, `QWEN_DEEP_MODEL=qwen3.6:35b-a3b` is a stronger deep model (about 23 GB). On 24 GB it doesn't load: it needs 21.5 GB of GPU memory and macOS gives the GPU about 17 GB.
+
+Only the default model needs pulling to get started. Deep is opt-in: run `ollama pull qwen3.5:9b` if you want it. Nothing is downloaded automatically; a missing model prints the `ollama pull` command to run.
 
 `--model` replaces the starting mode's model, including when the chat switches back to that mode; the other mode uses its own model. Piped input raises the context to at least 16384; ollama sets the context when it loads a model, so this applies only if the model isn't already loaded. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
 
@@ -78,7 +80,7 @@ Only the default model needs pulling to get started. Deep is opt-in: run `ollama
 | --- | --- | --- |
 | `--host` | `OLLAMA_HOST` | `http://127.0.0.1:11434` |
 | `--model` | `QWEN_MODEL` | `qwen3.5:4b` (default mode) |
-| | `QWEN_DEEP_MODEL` | `qwen3.6:35b-a3b` |
+| | `QWEN_DEEP_MODEL` | `qwen3.5:9b` |
 | | `QWEN_KEEP_ALIVE` | `30m` |
 | `-d`, `--deep` | | off |
 | `-t`, `--think` | | off |

@@ -22,8 +22,8 @@ const usage = `qwen-chat: chat with a local ollama model, answers rendered as Ma
   qwen-chat how do I x           one-shot
   cat f.ex | qwen-chat explain   one-shot with the piped text added to the prompt
 
-Modes: default, -d deep (bigger model, longer context). Thinking is off
-unless -t/--think is given.
+Modes: default, and -d deep (bigger model with thinking, longer context).
+In default mode thinking is off unless -t/--think is given.
 
 Interactive commands: /bye /exit /quit or ctrl-d quit, /clear forgets the
 conversation, /think prints the last reasoning, /default /deep switch mode,

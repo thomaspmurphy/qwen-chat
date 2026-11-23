@@ -11,12 +11,18 @@ type modeSpec struct {
 	modelEnv string
 	model    string
 	numCtx   int
+	think    bool
 }
 
 // The defaults for each mode. Change a model or context size here.
+// Measured on a 24 GB M5 Pro: without thinking the 9b was no more accurate
+// than the 4b and sometimes wrong where the 4b was right; with thinking it
+// was right and faster than the 4b thinking. Deep is opt-in, so it thinks.
+// qwen3.6:35b-a3b needs 21.5 GB of GPU memory, more than macOS gives the GPU
+// on a 24 GB Mac.
 var modeSpecs = map[string]modeSpec{
 	modeDefault: {modelEnv: "QWEN_MODEL", model: "qwen3.5:4b", numCtx: 8192},
-	modeDeep:    {modelEnv: "QWEN_DEEP_MODEL", model: "qwen3.6:35b-a3b", numCtx: 16384},
+	modeDeep:    {modelEnv: "QWEN_DEEP_MODEL", model: "qwen3.5:9b", numCtx: 16384, think: true},
 }
 
 const (
@@ -33,7 +39,7 @@ type settings struct {
 
 func resolve(mode string, think bool, getenv func(string) string) settings {
 	spec := modeSpecs[mode]
-	s := settings{mode: mode, model: spec.model, think: think, numCtx: spec.numCtx}
+	s := settings{mode: mode, model: spec.model, think: think || spec.think, numCtx: spec.numCtx}
 	if v := getenv(spec.modelEnv); v != "" {
 		s.model = v
 	}
