@@ -41,35 +41,36 @@ go install github.com/thomaspmurphy/qwen-chat@latest
 qwen-chat                              # interactive chat
 qwen-chat how do I reverse a list in elixir
 cat lib/foo.ex | qwen-chat explain this
-qwen-chat -q 'capital of peru?'          # quick: no reasoning
 qwen-chat -d prove sqrt 2 is irrational  # deep: bigger model
-qwen-chat --model llama3.2 --no-think 'one-line haiku about tea'
+qwen-chat --think 'is 1009 prime?'       # let the model reason first
+qwen-chat --model llama3.2 'one-line haiku about tea'
 ```
 
 In the interactive chat:
 
 - `/bye`, `/exit`, `/quit` or ctrl-d quit
 - `/clear` forgets the conversation
-- `/think` prints the last reply's reasoning
-- `/quick`, `/default`, `/deep` switch mode for the next messages, keeping the conversation
+- `/think` prints the last reply's reasoning (with `--think`)
+- `/default`, `/deep` switch mode for the next messages, keeping the conversation
 - `"""` opens and closes a multi-line message
 - ctrl-c during a reply cancels it
 
-While the model works, a status line on stderr shows `thinking Ns`, then `writing`. If ollama is not running and the host is local, qwen-chat starts `ollama serve` in the background (log in `~/.local/state/ollama/serve.log`), with flash attention and a q8_0 KV cache unless `OLLAMA_FLASH_ATTENTION` or `OLLAMA_KV_CACHE_TYPE` are set.
+While the model works, a status line on stderr shows `waiting Ns` (or `thinking Ns` with `--think`), then `writing`. If ollama is not running and the host is local, qwen-chat starts `ollama serve` in the background (log in `~/.local/state/ollama/serve.log`), with flash attention and a q8_0 KV cache unless `OLLAMA_FLASH_ATTENTION` or `OLLAMA_KV_CACHE_TYPE` are set.
 
 When stdout is not a terminal, the answer is printed as plain Markdown.
 
 ## Modes
 
-| Mode | Flag | Chat command | Default model | Download | Thinking | Context |
-| --- | --- | --- | --- | --- | --- | --- |
-| quick | `-q`, `--quick` | `/quick` | `qwen3.5:4b` | about 4 GB | off | 8192 |
-| default | | `/default` | `qwen3.5:4b` | about 4 GB | on | 8192 |
-| deep | `-d`, `--deep` | `/deep` | `qwen3.6:35b-a3b` | about 20 GB | on | 16384 |
+| Mode | Flag | Chat command | Default model | Download | Context |
+| --- | --- | --- | --- | --- | --- |
+| default | | `/default` | `qwen3.5:4b` | about 4 GB | 8192 |
+| deep | `-d`, `--deep` | `/deep` | `qwen3.6:35b-a3b` | about 20 GB | 16384 |
 
-Only the default model needs pulling to get started; quick uses the same one. Deep is opt-in: run `ollama pull qwen3.6:35b-a3b` if you want it. Nothing is downloaded automatically; a missing model prints the `ollama pull` command to run.
+Thinking is off by default in both modes; `-t` or `--think` turns it on for whichever mode is active. On a small model it costs tens of seconds per reply and rarely changes the answer.
 
-`--model` replaces the active mode's model. Piped input raises the context to at least 16384. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
+Only the default model needs pulling to get started. Deep is opt-in: run `ollama pull qwen3.6:35b-a3b` if you want it. Nothing is downloaded automatically; a missing model prints the `ollama pull` command to run.
+
+`--model` replaces the starting mode's model; switching mode in the chat uses that mode's own model. Piped input raises the context to at least 16384. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
 
 ## Flags and environment
 
@@ -77,12 +78,10 @@ Only the default model needs pulling to get started; quick uses the same one. De
 | --- | --- | --- |
 | `--host` | `OLLAMA_HOST` | `http://127.0.0.1:11434` |
 | `--model` | `QWEN_MODEL` | `qwen3.5:4b` (default mode) |
-| | `QWEN_QUICK_MODEL` | `qwen3.5:4b` |
 | | `QWEN_DEEP_MODEL` | `qwen3.6:35b-a3b` |
 | | `QWEN_KEEP_ALIVE` | `30m` |
-| `-q`, `--quick` | | off |
 | `-d`, `--deep` | | off |
-| `--no-think` | | reasoning on |
+| `-t`, `--think` | | off |
 | `--version` | | |
 
 ## Licence

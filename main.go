@@ -22,12 +22,12 @@ const usage = `qwen-chat: chat with a local ollama model, answers rendered as Ma
   qwen-chat how do I x           one-shot
   cat f.ex | qwen-chat explain   one-shot with the piped text added to the prompt
 
-Modes: -q quick (no reasoning), default, -d deep (bigger model, longer
-context).
+Modes: default, -d deep (bigger model, longer context). Thinking is off
+unless -t/--think is given.
 
 Interactive commands: /bye /exit /quit or ctrl-d quit, /clear forgets the
-conversation, /think prints the last reasoning, /quick /default /deep switch
-mode, """ opens and closes a multi-line message.
+conversation, /think prints the last reasoning, /default /deep switch mode,
+""" opens and closes a multi-line message.
 
 Flags:
 `
@@ -36,39 +36,50 @@ func main() {
 	os.Exit(run())
 }
 
+func envOr(k, def string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return def
+}
+
+type options struct {
+	host, model              string
+	think, deep, showVersion bool
+}
+
+func parseFlags(fs *flag.FlagSet, args []string) (options, error) {
+	var o options
+	fs.StringVar(&o.host, "host", envOr("OLLAMA_HOST", "http://127.0.0.1:11434"), "ollama server (env OLLAMA_HOST)")
+	fs.StringVar(&o.model, "model", "", "model name for the starting mode (env QWEN_MODEL, QWEN_DEEP_MODEL)")
+	fs.BoolVar(&o.think, "t", false, "let the model reason before answering")
+	fs.BoolVar(&o.think, "think", false, "let the model reason before answering")
+	fs.BoolVar(&o.deep, "d", false, "deep mode: bigger model, longer context")
+	fs.BoolVar(&o.deep, "deep", false, "deep mode: bigger model, longer context")
+	fs.BoolVar(&o.showVersion, "version", false, "print the version and exit")
+	fs.Usage = func() {
+		fmt.Fprint(fs.Output(), usage)
+		fs.PrintDefaults()
+	}
+	return o, fs.Parse(args)
+}
+
 func run() int {
-	env := func(k, def string) string {
-		if v := os.Getenv(k); v != "" {
-			return v
-		}
-		return def
+	o, err := parseFlags(flag.CommandLine, os.Args[1:])
+	if err != nil {
+		return 2
 	}
-	host := flag.String("host", env("OLLAMA_HOST", "http://127.0.0.1:11434"), "ollama server (env OLLAMA_HOST)")
-	model := flag.String("model", "", "model name, overriding the mode's (env QWEN_MODEL, QWEN_QUICK_MODEL, QWEN_DEEP_MODEL)")
-	noThink := flag.Bool("no-think", false, "ask the model not to reason before answering")
-	var quick, deep bool
-	flag.BoolVar(&quick, "q", false, "quick mode: no reasoning")
-	flag.BoolVar(&quick, "quick", false, "quick mode: no reasoning")
-	flag.BoolVar(&deep, "d", false, "deep mode: bigger model, longer context")
-	flag.BoolVar(&deep, "deep", false, "deep mode: bigger model, longer context")
-	showVersion := flag.Bool("version", false, "print the version and exit")
-	flag.Usage = func() {
-		fmt.Fprint(flag.CommandLine.Output(), usage)
-		flag.PrintDefaults()
-	}
-	flag.Parse()
-	if *showVersion {
+	if o.showVersion {
 		fmt.Println("qwen-chat", version)
 		return 0
 	}
 
-	mode, err := pickMode(quick, deep)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "qwen-chat:", err)
-		return 2
+	mode := modeDefault
+	if o.deep {
+		mode = modeDeep
 	}
-	pick := func(mode string) settings { return resolve(mode, *model, *noThink, os.Getenv) }
-	c := &client{host: normaliseHost(*host), keepAlive: env("QWEN_KEEP_ALIVE", defaultKeepAlive), settings: pick(mode)}
+	pick := func(mode string) settings { return resolve(mode, o.think, os.Getenv) }
+	c := &client{host: normaliseHost(o.host), keepAlive: envOr("QWEN_KEEP_ALIVE", defaultKeepAlive), settings: startSettings(mode, o.model, o.think, os.Getenv)}
 	stdinTTY := term.IsTerminal(int(os.Stdin.Fd()))
 	prompt := strings.Join(flag.Args(), " ")
 	piped := ""
@@ -132,7 +143,7 @@ func show(answer string) {
 // """ opens and closes a multi-line message, as in ollama's own prompt.
 func readPrompt(rl *readline.Instance, mode string) (string, error) {
 	p := "\033[38;2;255;193;7m›\033[0m "
-	if mode != modeDefault {
+	if mode == modeDeep {
 		p = "\033[2m" + mode + "\033[0m " + p
 	}
 	rl.SetPrompt(p)
@@ -162,7 +173,11 @@ func interactive(c *client, pick func(mode string) settings) int {
 		return 1
 	}
 	defer rl.Close()
-	dim(os.Stdout, c.mode+" · "+c.model+` · /bye or ctrl-d to quit, /clear to forget, /think for the last reasoning, /quick /default /deep to switch mode, """ for multi-line`)
+	banner := c.mode + " · " + c.model
+	if c.think {
+		banner += " · thinking on"
+	}
+	dim(os.Stdout, banner+` · /bye or ctrl-d to quit, /clear to forget, /think for the last reasoning, /default /deep to switch mode, """ for multi-line`)
 
 	var messages []message
 	lastThinking := ""
@@ -181,13 +196,15 @@ func interactive(c *client, pick func(mode string) settings) int {
 		case "/bye", "/exit", "/quit":
 			return 0
 		case "/think":
-			if t := strings.TrimSpace(lastThinking); t != "" {
+			if !c.think {
+				dim(os.Stdout, "thinking is off: start qwen-chat with --think")
+			} else if t := strings.TrimSpace(lastThinking); t != "" {
 				dim(os.Stdout, t)
 			} else {
 				dim(os.Stdout, "no reasoning yet")
 			}
 			continue
-		case "/quick", "/default", "/deep":
+		case "/default", "/deep":
 			c.settings = pick(strings.TrimSpace(prompt)[1:])
 			dim(os.Stdout, c.mode+" mode · "+c.model)
 			continue

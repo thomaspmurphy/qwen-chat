@@ -19,8 +19,12 @@ type status struct {
 	done       chan struct{}
 }
 
-func newStatus(draw bool) *status {
-	s := &status{start: time.Now(), phase: "thinking", stop: make(chan struct{}), done: make(chan struct{})}
+func newStatus(draw, think bool) *status {
+	phase := "waiting"
+	if think {
+		phase = "thinking"
+	}
+	s := &status{start: time.Now(), phase: phase, stop: make(chan struct{}), done: make(chan struct{})}
 	if draw {
 		go s.draw()
 	} else {

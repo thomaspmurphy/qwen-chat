@@ -151,7 +151,7 @@ func (c *client) ask(ctx context.Context, messages []message, drawStatus bool) (
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	st := newStatus(drawStatus)
+	st := newStatus(drawStatus, c.think)
 	defer st.close()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

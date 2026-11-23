@@ -1,12 +1,8 @@
 package main
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
 const (
-	modeQuick   = "quick"
 	modeDefault = "default"
 	modeDeep    = "deep"
 )
@@ -14,15 +10,13 @@ const (
 type modeSpec struct {
 	modelEnv string
 	model    string
-	think    bool
 	numCtx   int
 }
 
-// The defaults for each mode. Change a model, thinking or context size here.
+// The defaults for each mode. Change a model or context size here.
 var modeSpecs = map[string]modeSpec{
-	modeQuick:   {modelEnv: "QWEN_QUICK_MODEL", model: "qwen3.5:4b", think: false, numCtx: 8192},
-	modeDefault: {modelEnv: "QWEN_MODEL", model: "qwen3.5:4b", think: true, numCtx: 8192},
-	modeDeep:    {modelEnv: "QWEN_DEEP_MODEL", model: "qwen3.6:35b-a3b", think: true, numCtx: 16384},
+	modeDefault: {modelEnv: "QWEN_MODEL", model: "qwen3.5:4b", numCtx: 8192},
+	modeDeep:    {modelEnv: "QWEN_DEEP_MODEL", model: "qwen3.6:35b-a3b", numCtx: 16384},
 }
 
 const (
@@ -37,25 +31,19 @@ type settings struct {
 	numCtx int
 }
 
-func pickMode(quick, deep bool) (string, error) {
-	switch {
-	case quick && deep:
-		return "", errors.New("-q/--quick and -d/--deep cannot be used together")
-	case quick:
-		return modeQuick, nil
-	case deep:
-		return modeDeep, nil
-	}
-	return modeDefault, nil
-}
-
-// modelFlag is the --model value, empty when not given.
-func resolve(mode, modelFlag string, noThink bool, getenv func(string) string) settings {
+func resolve(mode string, think bool, getenv func(string) string) settings {
 	spec := modeSpecs[mode]
-	s := settings{mode: mode, model: spec.model, think: spec.think && !noThink, numCtx: spec.numCtx}
+	s := settings{mode: mode, model: spec.model, think: think, numCtx: spec.numCtx}
 	if v := getenv(spec.modelEnv); v != "" {
 		s.model = v
 	}
+	return s
+}
+
+// --model names the model for the starting mode only, so switching mode in
+// the chat actually changes the model.
+func startSettings(mode, modelFlag string, think bool, getenv func(string) string) settings {
+	s := resolve(mode, think, getenv)
 	if modelFlag != "" {
 		s.model = modelFlag
 	}
