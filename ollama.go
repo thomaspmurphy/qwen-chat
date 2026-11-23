@@ -26,9 +26,9 @@ type message struct {
 }
 
 type client struct {
-	host  string
-	model string
-	think bool
+	host      string
+	keepAlive string
+	settings
 }
 
 func normaliseHost(h string) string {
@@ -86,9 +86,7 @@ func (c *client) ensureServer(ctx context.Context) error {
 	defer logFile.Close()
 	cmd := exec.Command(bin, "serve")
 	cmd.Stdout, cmd.Stderr = logFile, logFile
-	if u, err := url.Parse(c.host); err == nil {
-		cmd.Env = append(os.Environ(), "OLLAMA_HOST="+u.Host)
-	}
+	cmd.Env = serveEnv(os.Environ(), c.host)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("starting ollama serve: %w", err)
@@ -109,15 +107,44 @@ func (c *client) ensureServer(ctx context.Context) error {
 	return fmt.Errorf("ollama serve did not answer at %s within 10s; see %s", c.host, logPath)
 }
 
+func serveEnv(env []string, host string) []string {
+	env = append([]string(nil), env...)
+	if u, err := url.Parse(host); err == nil {
+		env = append(env, "OLLAMA_HOST="+u.Host)
+	}
+	// What Homebrew's ollama service sets: they cut the memory a long context needs.
+	for _, kv := range []string{"OLLAMA_FLASH_ATTENTION=1", "OLLAMA_KV_CACHE_TYPE=q8_0"} {
+		k, _, _ := strings.Cut(kv, "=")
+		if _, set := os.LookupEnv(k); !set {
+			env = append(env, kv)
+		}
+	}
+	return env
+}
+
+func (c *client) requestBody(messages []message) ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"model":    c.model,
+		"messages": messages,
+		"stream":   true,
+		"think":    c.think,
+		// Ollama unloads a model after 5 minutes by default, so each one-shot
+		// a little apart would pay the load time again.
+		"keep_alive": c.keepAlive,
+		"options":    map[string]any{"num_ctx": c.numCtx},
+	})
+}
+
 type chunk struct {
 	Message message `json:"message"`
 	Error   string  `json:"error"`
 }
 
 func (c *client) ask(ctx context.Context, messages []message, drawStatus bool) (string, string, error) {
-	body, _ := json.Marshal(map[string]any{
-		"model": c.model, "messages": messages, "stream": true, "think": c.think,
-	})
+	body, err := c.requestBody(messages)
+	if err != nil {
+		return "", "", err
+	}
 	req, err := http.NewRequestWithContext(ctx, "POST", c.host+"/api/chat", bytes.NewReader(body))
 	if err != nil {
 		return "", "", err
@@ -135,6 +162,9 @@ func (c *client) ask(ctx context.Context, messages []message, drawStatus bool) (
 		b, _ := io.ReadAll(resp.Body)
 		var ch chunk
 		if json.Unmarshal(b, &ch) == nil && ch.Error != "" {
+			if resp.StatusCode == http.StatusNotFound && strings.Contains(ch.Error, "not found") {
+				return "", "", &missingModelError{model: c.model, mode: c.mode}
+			}
 			return "", "", errors.New(ch.Error)
 		}
 		return "", "", fmt.Errorf("%s: %s", resp.Status, strings.TrimSpace(string(b)))
