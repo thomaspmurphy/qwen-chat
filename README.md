@@ -70,7 +70,7 @@ Thinking is off by default in both modes; `-t` or `--think` turns it on for whic
 
 Only the default model needs pulling to get started. Deep is opt-in: run `ollama pull qwen3.6:35b-a3b` if you want it. Nothing is downloaded automatically; a missing model prints the `ollama pull` command to run.
 
-`--model` replaces the starting mode's model; switching mode in the chat uses that mode's own model. Piped input raises the context to at least 16384. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
+`--model` replaces the starting mode's model, including when the chat switches back to that mode; the other mode uses its own model. Piped input raises the context to at least 16384. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
 
 ## Flags and environment
 

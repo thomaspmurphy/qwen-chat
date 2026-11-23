@@ -78,7 +78,12 @@ func run() int {
 	if o.deep {
 		mode = modeDeep
 	}
-	pick := func(mode string) settings { return resolve(mode, o.think, os.Getenv) }
+	pick := func(m string) settings {
+		if m == mode {
+			return startSettings(mode, o.model, o.think, os.Getenv)
+		}
+		return resolve(m, o.think, os.Getenv)
+	}
 	c := &client{host: normaliseHost(o.host), keepAlive: envOr("QWEN_KEEP_ALIVE", defaultKeepAlive), settings: startSettings(mode, o.model, o.think, os.Getenv)}
 	stdinTTY := term.IsTerminal(int(os.Stdin.Fd()))
 	prompt := strings.Join(flag.Args(), " ")
