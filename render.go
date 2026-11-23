@@ -14,8 +14,6 @@ import (
 //go:embed styles/autumn-night.json
 var styleJSON []byte
 
-// render writes the answer: styled Markdown on a terminal, plain Markdown
-// otherwise.
 func render(w io.Writer, md string, tty bool, width int) error {
 	md = renderTeX(md)
 	if !tty {
@@ -25,7 +23,7 @@ func render(w io.Writer, md string, tty bool, width int) error {
 	r, err := glamour.NewTermRenderer(
 		glamour.WithStylesFromJSONBytes(styleJSON),
 		glamour.WithWordWrap(width),
-		// glow emits terminal256, which rounds the style's hex colours; the
+		// terminal256 (glow's choice) rounds the style's hex colours; the
 		// palette is only exact in truecolour.
 		glamour.WithChromaFormatter("terminal16m"),
 	)

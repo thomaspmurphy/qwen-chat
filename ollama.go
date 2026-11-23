@@ -64,8 +64,7 @@ func (c *client) local() bool {
 	return ip != nil && (ip.IsLoopback() || ip.IsUnspecified())
 }
 
-// ensureServer starts `ollama serve` in the background when nothing answers
-// at a local host.
+// Only a local host is started: a remote one is someone else's server.
 func (c *client) ensureServer(ctx context.Context) error {
 	if c.up(ctx) {
 		return nil
@@ -115,7 +114,6 @@ type chunk struct {
 	Error   string  `json:"error"`
 }
 
-// ask streams one reply and returns the answer and the reasoning.
 func (c *client) ask(ctx context.Context, messages []message, drawStatus bool) (string, string, error) {
 	body, _ := json.Marshal(map[string]any{
 		"model": c.model, "messages": messages, "stream": true, "think": c.think,

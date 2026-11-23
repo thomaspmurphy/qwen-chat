@@ -196,8 +196,8 @@ func texOutside(s string) string {
 	return replaceInline(replaceDisplay(s))
 }
 
-// codeSpan finds the next `...` span at or after from, emulating Python's
-// (`+)(.+?)\1, which needs a backreference Go's regexp lacks.
+// Matches (`+)(.+?)\1 by hand: the closing run must equal the opening one,
+// a backreference Go's regexp lacks.
 func codeSpan(s string, from int) (start, end int, ok bool) {
 	for i := from; i < len(s); i++ {
 		if s[i] != '`' {
@@ -251,8 +251,6 @@ func splitLinesKeepEnds(s string) []string {
 	return lines
 }
 
-// renderTeX turns LaTeX maths into Unicode, leaving fenced code blocks and
-// code spans alone. Without utftex the text is returned untouched.
 func renderTeX(md string) string {
 	if utftexPath == "" {
 		return md

@@ -114,8 +114,7 @@ func show(answer string) {
 	}
 }
 
-// readPrompt reads one message; """ opens and closes a multi-line one, as in
-// ollama's own prompt.
+// """ opens and closes a multi-line message, as in ollama's own prompt.
 func readPrompt(rl *readline.Instance) (string, error) {
 	rl.SetPrompt("\033[38;2;255;193;7m›\033[0m ")
 	line, err := rl.ReadLine()

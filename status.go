@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// status is one dim line on stderr, rewritten in place: the phase and the
-// time so far. The reasoning itself is kept for /think, not shown live.
+// The reasoning is kept for /think rather than shown live: a scrolling
+// ticker of it was too busy to read.
 type status struct {
 	mu         sync.Mutex
 	start      time.Time

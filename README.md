@@ -2,7 +2,6 @@
 
 A terminal chat client for a local [ollama](https://ollama.com) model that renders answers as Markdown, with LaTeX maths turned into Unicode.
 
-![demo](demo.gif)
 
 ## Dependencies
 
