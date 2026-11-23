@@ -2,7 +2,6 @@
 
 A terminal chat client for a local [ollama](https://ollama.com) model that renders answers as Markdown, with LaTeX maths turned into Unicode.
 
-
 ## Dependencies
 
 - **ollama**, required: <https://ollama.com>, or `brew install ollama` on macOS.
