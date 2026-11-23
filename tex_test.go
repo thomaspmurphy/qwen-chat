@@ -39,9 +39,10 @@ func TestInlineSimple(t *testing.T) {
 func TestInlineFlatFallback(t *testing.T) {
 	needUtftex(t)
 	for in, want := range map[string]string{
-		`$\int_0^\infty e^{-x^2}dx$`: "∫₀^∞ e⁻ˣ²dx",
-		`$\sum_{i=1}^{n} x_i$`:       "∑ᵢ₌₁ⁿ xᵢ",
-		`$\sqrt{x^2+1}$`:             "√(x²+1)",
+		`$\int_0^\infty e^{-x^2}dx$`:             "∫₀^∞ e⁻ˣ²dx",
+		`$\sum_{i=1}^{n} x_i$`:                   "∑ᵢ₌₁ⁿ xᵢ",
+		`$\sqrt{x^2+1}$`:                         "√(x²+1)",
+		`$x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$`: "x = (-b ± √(b²-4ac))/(2a)",
 	} {
 		if got := renderTeX(in); got != want {
 			t.Errorf("renderTeX(%q) = %q, want %q", in, got, want)

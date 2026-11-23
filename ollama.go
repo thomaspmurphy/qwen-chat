@@ -122,10 +122,14 @@ func serveEnv(env []string, host string) []string {
 	return env
 }
 
+// Answers are rendered as Markdown, and small models often leave code unfenced
+// unless told, which the renderer then reflows as prose.
+const systemPrompt = "Answer in Markdown. Put any code in a fenced code block with a language tag. Write maths in LaTeX: $...$ inline, $$...$$ for display."
+
 func (c *client) requestBody(messages []message) ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"model":    c.model,
-		"messages": messages,
+		"messages": append([]message{{Role: "system", Content: systemPrompt}}, messages...),
 		"stream":   true,
 		"think":    c.think,
 		// Ollama unloads a model after 5 minutes by default, so each one-shot

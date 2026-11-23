@@ -2,7 +2,7 @@
 
 A terminal chat client for a local [ollama](https://ollama.com) model that renders answers as Markdown, with LaTeX maths turned into Unicode.
 
-![qwen-chat answering two questions, with a maths block and a highlighted code block](demo.gif)
+![qwen-chat drawing the quadratic formula, writing a highlighted Python function, then explaining a piped file](demo.gif)
 
 ## Dependencies
 
@@ -70,7 +70,7 @@ Thinking is off by default in both modes; `-t` or `--think` turns it on for whic
 
 Only the default model needs pulling to get started. Deep is opt-in: run `ollama pull qwen3.6:35b-a3b` if you want it. Nothing is downloaded automatically; a missing model prints the `ollama pull` command to run.
 
-`--model` replaces the starting mode's model, including when the chat switches back to that mode; the other mode uses its own model. Piped input raises the context to at least 16384. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
+`--model` replaces the starting mode's model, including when the chat switches back to that mode; the other mode uses its own model. Piped input raises the context to at least 16384; ollama sets the context when it loads a model, so this applies only if the model isn't already loaded. The model stays loaded for 30 minutes after each reply, so the next one-shot starts quickly.
 
 ## Flags and environment
 

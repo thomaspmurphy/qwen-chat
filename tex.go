@@ -66,8 +66,13 @@ func symbol(cmd string) string {
 // otherwise.
 func flat(expr string) string {
 	expr = limitsRe.ReplaceAllString(expr, "")
-	expr = fracRe.ReplaceAllString(expr, "($1)/($2)")
-	expr = sqrtRe.ReplaceAllString(expr, "√($1)")
+	// The patterns only match brace pairs with nothing nested inside, so repeat
+	// until stable: \frac{-b \pm \sqrt{x}}{2a} needs the \sqrt flattened first.
+	for prev := ""; prev != expr; {
+		prev = expr
+		expr = sqrtRe.ReplaceAllString(expr, "√($1)")
+		expr = fracRe.ReplaceAllString(expr, "($1)/($2)")
+	}
 	expr = scriptRe.ReplaceAllStringFunc(expr, func(m string) string {
 		g := scriptRe.FindStringSubmatch(m)
 		mark, body := g[1], g[2]
